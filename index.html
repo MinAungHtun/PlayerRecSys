@@ -3,356 +3,301 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NBA Performance Recommender System</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <title>NBA Player Recommender</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f7f6; color: #333; }
-        header { background-color: #1d428a; color: #ffffff; padding: 20px; text-align: center; }
-        nav { background-color: #c9082a; padding: 10px 0; text-align: center; }
-        nav a { color: #ffffff; margin: 0 15px; text-decoration: none; font-weight: bold; }
-       .container { padding: 20px; max-width: 1200px; margin: auto; }
-        h1, h2 { color: #1d428a; }
-        /* Style for the Recommendation Tool */
-        #recommender-tool { background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
-       .input-group label { display: block; margin-bottom: 8px; font-weight: bold; }
-       .input-group select,.input-group button { padding: 10px; margin-right: 10px; border-radius: 4px; border: 1px solid #ccc; }
-        #recommendation-results table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        #recommendation-results th, #recommendation-results td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        #recommendation-results th { background-color: #f2f2f2; color: #333; }
-        /* Style for the Roster Table (Initial View) */
-        #roster-table { max-height: 400px; overflow-y: scroll; margin-top: 20px; background-color: #fff; border-radius: 8px; padding: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
-        #roster-table table { width: 100%; border-collapse: collapse; }
-        #roster-table th, #roster-table td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 0.9em; }
-        #roster-table th { position: sticky; top: 0; background-color: #1d428a; color: #ffffff; cursor: pointer; }
-       .top-performer { background-color: #fffacd; font-weight: bold; }
-        
-        /* Utility Classes for Explanation */
-       .explanation { margin-top: 20px; padding: 15px; border-left: 5px solid #c9082a; background-color: #fff0f0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Dark background inspired by sports/tech themes */
+        }
+        .card {
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.6);
+        }
+        .primary-btn {
+            background-color: #238636;
+            transition: background-color 0.2s;
+        }
+        .primary-btn:hover {
+            background-color: #2ea043;
+        }
+        .dropdown-select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg fill="white" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 0.7rem top 50%;
+            background-size: 1.5rem auto;
+            cursor: pointer;
+        }
     </style>
 </head>
-<body>
+<body class="p-4 md:p-8 min-h-screen flex items-center justify-center">
 
-    <header>
-        <h1>NBA Content-Based Player Performance Recommender</h1>
-    </header>
+    <div class="w-full max-w-4xl">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-2">NBA Player Recommender</h1>
+            <p class="text-xl text-gray-400">Find players with similar performance profiles using your 2024-2025 game data.</p>
+        </header>
 
-    <nav>
-        <a href="#recommender">Recommender Tool</a>
-        <a href="#roster">Performance Roster</a>
-        <a href="#analytics">Analytics Overview</a>
-    </nav>
+        <!-- Main Recommender Panel -->
+        <div class="card p-6 md:p-10 rounded-2xl">
+            <h2 class="text-2xl font-bold text-white mb-6">1. Select a Player & Metric</h2>
 
-    <div class="container">
-        
-        <section id="analytics">
-            <h2>Analytics Overview</h2>
-            <p><strong>Methodology:</strong> This system uses Content-Based Filtering (CBF) to find similar player performance instances. Similarity is calculated using **Cosine Similarity** on a normalized feature vector derived from the Game Score (GmSc) components.</p>
-            <p><strong>GmSc Correlation:</strong> Performance instances in winning efforts (W) show a significantly higher average GmSc (~12.60) compared to those in losing efforts (L) (~9.15). [1]</p>
-            <div id="top-performers-summary">
-                <h3>Top 10 Performances (By GmSc)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Player Selection -->
+                <div>
+                    <label for="player-select" class="block text-sm font-medium text-gray-300 mb-2">Target Player</label>
+                    <div class="relative">
+                        <select id="player-select" class="dropdown-select w-full p-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-green-500 focus:border-green-500 text-base" disabled>
+                            <option value="">Loading Players...</option>
+                        </select>
+                    </div>
                 </div>
-        </section>
 
-        <section id="recommender">
-            <h2 id="recommender-header">Recommender Tool</h2>
-            <div id="recommender-tool">
-                <p><strong>Select a Performance to Find Similar Matches:</strong></p>
-                <div class="input-group">
-                    <label for="target-performance">Target Performance (Player - Date - GmSc)</label>
-                    <select id="target-performance" style="width: 70%;"></select>
-                    <button onclick="runRecommendation()">Find Similar Performances (Top 10)</button>
+                <!-- Metric Selection -->
+                <div>
+                    <label for="metric-select" class="block text-sm font-medium text-gray-300 mb-2">Similarity Metric</label>
+                    <select id="metric-select" class="w-full p-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-green-500 focus:border-green-500 text-base">
+                        <option value="GmSc">Game Score (Overall Performance)</option>
+                        <option value="PTS">Points (Scoring Focus)</option>
+                        <option value="AST">Assists (Playmaking Focus)</option>
+                        <option value="TRB">Total Rebounds (Rebounding Focus)</option>
+                        <option value="BLK">Blocks (Defensive Focus)</option>
+                        <option value="3P%">3P% (Three-Point Shooting Efficiency)</option>
+                    </select>
                 </div>
-                
-                <div class="explanation">
-                    <strong>Model Rationale:</strong> The recommendation favors performances with a similar *statistical profile* (pattern of scoring, rebounding, and efficiency) rather than just raw volume. Turnovers and inefficient shooting are heavily penalized in the underlying metrics.
-                </div>
-                
-                <div id="recommendation-results">
-                    <h3>Recommendation Results</h3>
+
+                <!-- Action Button -->
+                <div class="flex items-end pt-2 md:pt-0">
+                    <button id="recommend-btn" class="primary-btn w-full p-3 rounded-lg font-semibold text-lg text-white disabled:opacity-50" disabled>
+                        Get Recommendations
+                    </button>
                 </div>
             </div>
-        </section>
 
-        <section id="roster">
-            <h2>Full Performance Roster</h2>
-            <p>Click table headers to sort the data. Filtered by performances with GmSc > 0.0.</p>
-            <div id="roster-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th data-column="Player">Player</th>
-                            <th data-column="Tm">Team</th>
-                            <th data-column="Date">Date</th>
-                            <th data-column="GmSc">GmSc</th>
-                            <th data-column="PTS">PTS</th>
-                            <th data-column="AST">AST</th>
-                            <th data-column="TRB">TRB</th>
-                            <th data-column="MP">MP</th>
-                        </tr>
-                    </thead>
-                    <tbody id="roster-body">
-                        </tbody>
-                </table>
+            <!-- Loading Indicator & Status Message -->
+            <div id="status-message" class="text-center text-sm text-yellow-400 my-4 hidden">
+                Loading and processing data...
             </div>
-        </section>
-        
+            <div id="error-message" class="text-center text-sm text-red-400 my-4 hidden">
+                Error loading data. Check the console for details.
+            </div>
+
+            <hr class="border-gray-700 my-8">
+
+            <h2 class="text-2xl font-bold text-white mb-6">2. Top 5 Similar Players</h2>
+
+            <!-- Recommendations Output -->
+            <div id="recommendation-list" class="space-y-4">
+                <p class="text-gray-500 text-center p-4 rounded-lg bg-gray-800">Select a player and click "Get Recommendations" to see results.</p>
+            </div>
+        </div>
+
+        <footer class="mt-8 text-center text-gray-500 text-sm">
+            Data Source: database_24_25.csv | Built with Gemini & Tailwind CSS
+        </footer>
+
     </div>
 
     <script>
-        let rawData =;
-        let sortedColumn = 'GmSc';
-        let sortDirection = 'desc';
+        // Global variables for data and Firebase config
+        let playerData = [];
+        const PLAYER_SELECT = document.getElementById('player-select');
+        const METRIC_SELECT = document.getElementById('metric-select');
+        const RECOMMEND_BTN = document.getElementById('recommend-btn');
+        const RECOMMENDATION_LIST = document.getElementById('recommendation-list');
+        const STATUS_MESSAGE = document.getElementById('status-message');
+        const ERROR_MESSAGE = document.getElementById('error-message');
 
-        // Columns used for similarity calculation (Game Score components are proxies)
-        // These are intentionally simplified for a purely front-end prototype.
-        const FEATURE_COLUMNS =;
-
-        // Utility function to load the CSV file
-        function loadCSV() {
-            // NOTE: This assumes 'database_24_25.csv' is in the same directory for GitHub Pages deployment.
-            Papa.parse('database_24_25.csv', {
-                download: true,
-                header: true,
-                dynamicTyping: true,
-                skipEmptyLines: true,
-                complete: (results) => {
-                    rawData = results.data.filter(row => row.GmSc > 0.0); // Filter out non-productive games for relevance
-                    initializeUI(rawData);
-                },
-                error: (error) => {
-                    console.error("Error loading CSV:", error);
-                    alert("Failed to load data. Ensure 'database_24_25.csv' is in the root directory.");
-                }
-            });
-        }
-
-        // Feature Scaling / Normalization (Per Minute)
-        function getFeatureVector(row) {
-            const vector = {};
-            const minutes = parseFloat(row.MP); 
-            // Handle missing or zero minutes to prevent division by zero, though filtration helps here.
-            const mp = (minutes > 0)? minutes : 1; 
-
-            // Basic feature set normalized by minutes played (MP)
-            vector.PTS = parseFloat(row.PTS) / mp;
-            vector.FGA = parseFloat(row.FGA) / mp; // Penalizes volume shooting
-            vector.ThreeP = parseFloat(row['3P']) / mp;
-            vector.ORB = parseFloat(row.ORB) / mp;
-            vector.DRB = parseFloat(row.DRB) / mp;
-            vector.AST = parseFloat(row.AST) / mp;
-            vector.STL = parseFloat(row.STL) / mp;
-            vector.BLK = parseFloat(row.BLK) / mp;
-            vector.TOV = parseFloat(row.TOV) / mp; // Penalizes turnovers
-            vector.PF = parseFloat(row.PF) / mp; // Penalizes fouls
-
-            return vector;
-        }
-
-        // Core Similarity Calculation (Cosine Similarity)
-        function cosineSimilarity(vecA, vecB) {
-            const features = Object.keys(vecA);
-            let dotProduct = 0;
-            let magnitudeA = 0;
-            let magnitudeB = 0;
-
-            for (const feature of features) {
-                const valA = vecA[feature] |
-
-| 0;
-                const valB = vecB[feature] |
-
-| 0;
-
-                dotProduct += valA * valB;
-                magnitudeA += valA * valA;
-                magnitudeB += valB * valB;
+        // Helper function to format metric values
+        function formatMetric(key, value) {
+            if (key.includes('%')) {
+                return (value * 100).toFixed(1) + '%';
             }
-
-            magnitudeA = Math.sqrt(magnitudeA);
-            magnitudeB = Math.sqrt(magnitudeB);
-
-            if (magnitudeA === 0 |
-
-| magnitudeB === 0) return 0;
-
-            return dotProduct / (magnitudeA * magnitudeB);
+            return parseFloat(value).toFixed(1);
         }
-        
-        // Populate the dropdown menu and initial tables
-        function initializeUI(data) {
-            const dropdown = document.getElementById('target-performance');
-            const topPerformersSummary = document.getElementById('top-performers-summary');
-            
-            // Populate Dropdown with Top Performers (to make selection meaningful)
-            const sortedByGmSc = [...data].sort((a, b) => parseFloat(b.GmSc) - parseFloat(a.GmSc));
-            const top10 = sortedByGmSc.slice(0, 10);
-            
-            let topPerformersHTML = `<table><thead><tr><th>Rank</th><th>Player</th><th>Date</th><th>GmSc</th></tr></thead><tbody>`;
-            top10.forEach((row, index) => {
+
+        // --- Data Loading and Parsing ---
+
+        async function loadAndParseCSV() {
+            STATUS_MESSAGE.textContent = "Loading and processing data...";
+            STATUS_MESSAGE.classList.remove('hidden');
+            RECOMMEND_BTN.disabled = true;
+
+            try {
+                // Fetch the uploaded CSV file (Note: contentFetchId is provided by the environment)
+                const fetchId = "uploaded:database_24_25.csv";
+                const response = await fetch(`fetch-file/${fetchId}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const csvText = await response.text();
+                playerData = parseCSV(csvText);
+
+                // Populate the dropdown with unique player names
+                populatePlayerDropdown(playerData);
+
+                STATUS_MESSAGE.classList.add('hidden');
+                RECOMMEND_BTN.disabled = false;
+                PLAYER_SELECT.disabled = false;
+
+            } catch (error) {
+                console.error("Failed to load or parse CSV:", error);
+                STATUS_MESSAGE.classList.add('hidden');
+                ERROR_MESSAGE.textContent = `Error loading data: ${error.message}`;
+                ERROR_MESSAGE.classList.remove('hidden');
+            }
+        }
+
+        function parseCSV(csvText) {
+            // Split by newline, handle various newline formats
+            const lines = csvText.trim().split(/\r\n|\n/);
+            if (lines.length === 0) return [];
+
+            const headers = lines[0].split(',').map(h => h.trim());
+            const data = [];
+
+            // Skip header line (lines[0])
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                if (values.length === headers.length) {
+                    const row = {};
+                    headers.forEach((header, index) => {
+                        // Convert numeric stats to floating point numbers
+                        const numericHeaders = ['MP', 'FG', 'FGA', 'FG%', '3P', '3PA', '3P%', 'FT', 'FTA', 'FT%', 'ORB', 'DRB', 'TRB', 'AST', 'STL', 'BLK', 'TOV', 'PF', 'PTS', 'GmSc'];
+                        if (numericHeaders.includes(header)) {
+                            row[header] = parseFloat(values[index]) || 0; // Use 0 if parsing fails
+                        } else {
+                            row[header] = values[index];
+                        }
+                    });
+                    data.push(row);
+                }
+            }
+            return data;
+        }
+
+        function populatePlayerDropdown(data) {
+            // Get unique player names
+            const playerNames = [...new Set(data.map(p => p.Player))].sort();
+
+            // Clear loading option and add default
+            PLAYER_SELECT.innerHTML = '<option value="" disabled selected>Select a Player...</option>';
+
+            // Add new options
+            playerNames.forEach(name => {
                 const option = document.createElement('option');
-                const uniqueId = `${row.Player}-${row.Date}-${row.GmSc}`;
-                option.value = uniqueId;
-                option.textContent = `${row.Player} (${row.Date}) - GmSc: ${row.GmSc}`;
-                dropdown.appendChild(option);
-
-                topPerformersHTML += `<tr class="top-performer"><td>${index + 1}</td><td>${row.Player}</td><td>${row.Date}</td><td>${row.GmSc}</td></tr>`;
-            });
-            topPerformersHTML += `</tbody></table>`;
-            topPerformersSummary.innerHTML = '<h3>Top 10 Performances (By GmSc)</h3>' + topPerformersHTML;
-
-            // Display full roster
-            renderRoster(data);
-
-            // Set a default target recommendation (The highest GmSc performer)
-            if (top10.length > 0) {
-                dropdown.value = `${top10.Player}-${top10.Date}-${top10.GmSc}`;
-                runRecommendation();
-            }
-        }
-        
-        // Roster Rendering and Sorting Logic
-        function renderRoster(data) {
-            const tbody = document.getElementById('roster-body');
-            tbody.innerHTML = '';
-
-            const dataToSort = [...data];
-
-            // Sorting logic
-            dataToSort.sort((a, b) => {
-                let aVal = a[sortedColumn];
-                let bVal = b[sortedColumn];
-
-                if (!isNaN(parseFloat(aVal)) && isFinite(aVal)) {
-                    aVal = parseFloat(aVal);
-                    bVal = parseFloat(bVal);
-                } else if (typeof aVal === 'string') {
-                    // For strings, ignore case and compare
-                    aVal = aVal.toLowerCase();
-                    bVal = bVal.toLowerCase();
-                }
-
-                if (aVal < bVal) return sortDirection === 'asc'? -1 : 1;
-                if (aVal > bVal) return sortDirection === 'asc'? 1 : -1;
-                return 0;
-            });
-
-            dataToSort.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${row.Player}</td>
-                    <td>${row.Tm}</td>
-                    <td>${row.Data}</td>
-                    <td>${parseFloat(row.GmSc).toFixed(1)}</td>
-                    <td>${row.PTS}</td>
-                    <td>${row.AST}</td>
-                    <td>${row.TRB}</td>
-                    <td>${row.MP}</td>
-                `;
-                tbody.appendChild(tr);
+                option.value = name;
+                option.textContent = name;
+                PLAYER_SELECT.appendChild(option);
             });
         }
 
-        // Attach sort listeners
-        document.querySelectorAll('#roster-table th').forEach(header => {
-            header.addEventListener('click', function() {
-                const column = this.getAttribute('data-column');
-                if (sortedColumn === column) {
-                    sortDirection = (sortDirection === 'asc')? 'desc' : 'asc';
-                } else {
-                    sortedColumn = column;
-                    sortDirection = 'desc'; // Default descending for stats
-                }
-                renderRoster(rawData);
-            });
-        });
+        // --- Recommender System Logic ---
 
-        // Main Recommendation Function
-        function runRecommendation() {
-            const selectedValue = document.getElementById('target-performance').value;
-            const = selectedValue.split('-');
+        function calculateSimilarity(targetPlayerName, metric) {
+            const targetPlayer = playerData.find(p => p.Player === targetPlayerName);
 
-            const targetPerformance = rawData.find(row => 
-                row.Player === targetPlayer && 
-                row.Date === targetDate && 
-                parseFloat(row.GmSc).toFixed(1) === parseFloat(targetGmSc).toFixed(1)
-            );
+            if (!targetPlayer) return [];
 
-            if (!targetPerformance) {
-                document.getElementById('recommendation-results').innerHTML = '<h3>Error: Target performance not found.</h3>';
+            const recommendations = playerData
+                .filter(p => p.Player !== targetPlayerName) // Don't recommend the player to themselves
+                .map(player => {
+                    // Calculate the absolute difference (distance) for the selected metric
+                    const targetValue = targetPlayer[metric];
+                    const currentPlayerValue = player[metric];
+
+                    // Use Math.abs for positive distance
+                    const distance = Math.abs(targetValue - currentPlayerValue);
+
+                    // Combine game score difference with player info
+                    return {
+                        ...player,
+                        distance: distance,
+                        targetMetric: metric,
+                        targetPlayerValue: targetValue,
+                        similarPlayerValue: currentPlayerValue
+                    };
+                })
+                // Sort by the lowest distance (most similar)
+                .sort((a, b) => a.distance - b.distance)
+                .slice(0, 5); // Get top 5
+
+            return recommendations;
+        }
+
+        // --- UI Rendering ---
+
+        function renderRecommendations(recommendations, targetPlayerName, metric) {
+            RECOMMENDATION_LIST.innerHTML = ''; // Clear previous results
+
+            if (recommendations.length === 0) {
+                RECOMMENDATION_LIST.innerHTML = `<p class="text-gray-500 text-center p-4 rounded-lg bg-gray-800">No similar players found for ${targetPlayerName} based on ${metric}.</p>`;
                 return;
             }
 
-            const targetVector = getFeatureVector(targetPerformance);
-            const similarities =;
+            const targetPlayer = playerData.find(p => p.Player === targetPlayerName);
+            const targetValue = formatMetric(metric, targetPlayer[metric]);
 
-            rawData.forEach(candidate => {
-                // Skip comparing the item to itself
-                const candidateId = `${candidate.Player}-${candidate.Date}-${candidate.GmSc}`;
-                if (candidateId === selectedValue) return;
-
-                const candidateVector = getFeatureVector(candidate);
-                const similarityScore = cosineSimilarity(targetVector, candidateVector);
-                
-                // Optional: Apply a small boost for winning games (Re-ranking Stage 3 Concept)
-                let finalScore = similarityScore;
-                if (candidate.Res === 'W') {
-                    finalScore += 0.05; // Small boost for context/winning performance
-                }
-                
-                similarities.push({
-                    player: candidate.Player,
-                    team: candidate.Tm,
-                    date: candidate.Date,
-                    gmSc: candidate.GmSc,
-                    similarity: finalScore,
-                    stats: candidate
-                });
-            });
-
-            // Rank and retrieve top 10 (excluding the small boost for display simplicity)
-            similarities.sort((a, b) => b.similarity - a.similarity);
-            const topRecommendations = similarities.slice(0, 10);
-
-            // Render Results
-            const resultsDiv = document.getElementById('recommendation-results');
-            let tableHTML = `
-                <h3>Recommendations for: ${targetPlayer} (${targetDate}, GmSc: ${targetGmSc})</h3>
-                <p>Top 10 statistically similar performance profiles based on normalized box score metrics.</p>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Player</th>
-                            <th>Team</th>
-                            <th>Date</th>
-                            <th>GmSc</th>
-                            <th>Similarity Score</th>
-                            <th>Result</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            // Add a header for context
+            const headerHtml = `
+                <div class="bg-gray-800 p-4 rounded-xl mb-4">
+                    <p class="text-xl font-semibold text-white">Target Player: <span class="text-green-400">${targetPlayerName}</span></p>
+                    <p class="text-md text-gray-400">Target ${metric}: <span class="font-mono">${targetValue}</span></p>
+                </div>
             `;
-            
-            topRecommendations.forEach((rec, index) => {
-                tableHTML += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${rec.player}</td>
-                        <td>${rec.team}</td>
-                        <td>${rec.date}</td>
-                        <td>${parseFloat(rec.gmSc).toFixed(1)}</td>
-                        <td>${(rec.similarity * 100).toFixed(2)}%</td>
-                        <td>${rec.stats.Res}</td>
-                    </tr>
-                `;
-            });
+            RECOMMENDATION_LIST.innerHTML += headerHtml;
 
-            tableHTML += `</tbody></table>`;
-            resultsDiv.innerHTML = tableHTML;
+
+            recommendations.forEach((rec, index) => {
+                const recValue = formatMetric(metric, rec.similarPlayerValue);
+                const distance = formatMetric(metric, rec.distance);
+
+                const itemHtml = `
+                    <div class="card p-4 rounded-xl flex items-center justify-between border-l-4 border-green-500">
+                        <div class="flex-1">
+                            <p class="text-lg font-bold text-white">${index + 1}. ${rec.Player} (${rec.Tm})</p>
+                            <p class="text-sm text-gray-400">Game Date: ${rec.Data}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-semibold text-green-400">${metric}: ${recValue}</p>
+                            <p class="text-sm text-gray-500">Difference: ${distance}</p>
+                        </div>
+                    </div>
+                `;
+                RECOMMENDATION_LIST.innerHTML += itemHtml;
+            });
         }
 
-        // Start the application when the page loads
-        document.addEventListener('DOMContentLoaded', loadCSV);
+        // --- Event Handlers ---
+
+        RECOMMEND_BTN.addEventListener('click', () => {
+            const selectedPlayer = PLAYER_SELECT.value;
+            const selectedMetric = METRIC_SELECT.value;
+
+            if (selectedPlayer) {
+                const recommendations = calculateSimilarity(selectedPlayer, selectedMetric);
+                renderRecommendations(recommendations, selectedPlayer, selectedMetric);
+            } else {
+                RECOMMENDATION_LIST.innerHTML = `<p class="text-red-400 text-center p-4 rounded-lg bg-gray-800">Please select a player first.</p>`;
+            }
+        });
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', loadAndParseCSV);
     </script>
+
 </body>
 </html>
